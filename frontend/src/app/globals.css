@@ -1,0 +1,194 @@
+@import "../styles/theme.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Leaflet maps follow the theme tokens */
+@layer components {
+  .leaflet-container {
+    font-family: inherit;
+    background: rgb(var(--color-surface-2));
+  }
+  .leaflet-tooltip.pc-tooltip {
+    background: rgb(var(--color-surface));
+    color: rgb(var(--color-foreground));
+    border: 1px solid rgb(var(--color-border));
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-card);
+    font-weight: 600;
+    padding: 4px 8px;
+  }
+  .leaflet-tooltip-top.pc-tooltip::before {
+    border-top-color: rgb(var(--color-surface));
+  }
+  .leaflet-container .leaflet-control-attribution {
+    background: rgb(var(--color-surface) / 0.8);
+    color: rgb(var(--color-muted));
+  }
+  .leaflet-container .leaflet-control-attribution a {
+    color: rgb(var(--color-info));
+  }
+  .leaflet-bar a,
+  .leaflet-bar a:hover {
+    background: rgb(var(--color-surface));
+    color: rgb(var(--color-foreground));
+    border-color: rgb(var(--color-border));
+  }
+
+  /* S2 split map */
+  .leaflet-container path.pc-fill {
+    transition: fill 300ms ease, fill-opacity 300ms ease;
+  }
+  .leaflet-tooltip.pc-tooltip .pc-tt {
+    display: flex;
+    min-width: 11rem;
+    flex-direction: column;
+    gap: 3px;
+    font-weight: 400;
+  }
+  .pc-tt-name {
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .pc-tt-name span {
+    margin-left: 6px;
+    font-weight: 400;
+    color: rgb(var(--color-muted));
+  }
+  .pc-tt-value {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+  .pc-tt-cat {
+    margin-top: -2px;
+    font-size: 11px;
+    color: rgb(var(--color-muted));
+  }
+  .pc-tt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12px;
+    color: rgb(var(--color-muted));
+  }
+  .pc-tt-row b {
+    color: rgb(var(--color-foreground));
+    font-weight: 600;
+  }
+  .pc-pill {
+    margin-top: 4px;
+    align-self: flex-start;
+    border-radius: 9999px;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .pc-pill-high {
+    background: rgb(var(--color-conf-high));
+    color: #fff;
+  }
+  .pc-pill-medium {
+    background: rgb(var(--color-conf-medium));
+    color: rgb(var(--color-accent-foreground));
+  }
+  .pc-pill-low {
+    background: rgb(var(--color-conf-low));
+    color: #fff;
+  }
+  .pc-gp-label-wrap,
+  .pc-block-label-wrap {
+    background: none;
+    border: 0;
+  }
+  .pc-gp-label {
+    display: none;
+    transform: translate(-50%, -50%);
+    flex-direction: column;
+    align-items: center;
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 1.15;
+    color: rgb(var(--color-foreground));
+    text-shadow:
+      0 0 3px rgb(var(--color-surface)),
+      0 0 3px rgb(var(--color-surface)),
+      0 0 2px rgb(var(--color-surface));
+  }
+  .pc-gp-label b {
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .pc-show-gp-labels .pc-gp-label {
+    display: inline-flex;
+  }
+  .pc-block-label {
+    display: inline-flex;
+    transform: translate(-50%, -50%);
+    flex-direction: column;
+    align-items: center;
+    white-space: nowrap;
+    color: var(--pc-label-fg, rgb(var(--color-foreground)));
+    text-align: center;
+  }
+  .pc-block-label b {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.05;
+  }
+  .pc-block-label span {
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+  .pc-projector .pc-block-label b {
+    font-size: 52px;
+  }
+  .pc-projector .pc-gp-label {
+    font-size: 14px;
+  }
+  .pc-projector .pc-gp-label b {
+    font-size: 16px;
+  }
+
+  /* Phase 6b: extreme-weather alerts */
+  @keyframes pc-alert-pulse {
+    0%, 100% { stroke-opacity: 1; stroke-width: 4px; }
+    50% { stroke-opacity: 0.25; stroke-width: 7px; }
+  }
+  .leaflet-container path.pc-alert-orange,
+  .leaflet-container path.pc-alert-red {
+    animation: pc-alert-pulse 1.2s ease-in-out infinite;
+    stroke-linejoin: round;
+  }
+  .leaflet-container path.pc-alert-orange {
+    stroke: rgb(var(--alert-orange)) !important;
+  }
+  .leaflet-container path.pc-alert-red {
+    stroke: rgb(var(--alert-red)) !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .leaflet-container path.pc-alert-orange,
+    .leaflet-container path.pc-alert-red {
+      animation: none;
+      stroke-width: 5px;
+    }
+  }
+}

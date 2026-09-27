@@ -1,0 +1,120 @@
+/* =====================================================================
+   Kshetra theme tokens
+   ---------------------------------------------------------------------
+   CHANGE THE PALETTE HERE ONLY.
+   Every colour in the app comes from these variables. Components use
+   Tailwind names (bg-primary, text-muted, border-border ...) that map
+   to these tokens in tailwind.config.ts. Never put hex codes in
+   components.
+
+   Format: space-separated RGB channels ("11 93 75") so Tailwind can
+   apply opacity, e.g. bg-primary/10.
+
+   :root                 -> light theme
+   [data-theme="dark"]   -> dark theme (set on <html> by ThemeToggle)
+   ===================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --color-primary: 11 93 75;             /* #0B5D4B deep green */
+  --color-primary-foreground: 255 255 255;
+  --color-accent: 232 163 23;            /* #E8A317 amber */
+  --color-accent-foreground: 29 42 48;
+
+  /* Surfaces and text */
+  --color-background: 247 250 249;      /* #F7FAF9 page */
+  --color-surface: 255 255 255;         /* #FFFFFF cards */
+  --color-surface-2: 234 244 241;       /* #EAF4F1 subtle fills */
+  --color-foreground: 29 42 48;         /* #1D2A30 body text */
+  --color-muted: 93 110 117;            /* secondary text */
+  --color-border: 214 226 222;
+  --color-ring: 11 93 75;
+
+  /* Status */
+  --color-success: 22 128 61;
+  --color-warning: 180 115 8;
+  --color-danger: 196 43 43;
+  --color-info: 29 106 179;
+
+  /* Confidence pills (always shown with a text label) */
+  --color-conf-high: 22 128 61;
+  --color-conf-medium: 232 163 23;
+  --color-conf-low: 138 150 155;
+
+  /* IMD rainfall categories (mm/day) */
+  --rain-0: 255 255 255;   /* No rain          0          */
+  --rain-1: 198 228 247;   /* Very light       0.1 - 2.4  */
+  --rain-2: 116 185 232;   /* Light            2.5 - 15.5 */
+  --rain-3: 33 113 181;    /* Moderate        15.6 - 64.4 */
+  --rain-4: 8 48 107;      /* Heavy           64.5 - 115.5*/
+  --rain-5: 106 61 154;    /* Very heavy +   >= 115.6     */
+
+  /* Temperature scale: cold -> hot */
+  --temp-1: 49 54 149;
+  --temp-2: 116 173 209;
+  --temp-3: 255 255 191;
+  --temp-4: 253 174 97;
+  --temp-5: 215 48 39;
+
+  /* Relative humidity scale: dry -> humid */
+  --rh-1: 255 255 204;
+  --rh-2: 161 218 180;
+  --rh-3: 65 182 196;
+  --rh-4: 44 127 184;
+  --rh-5: 37 52 148;
+
+  /* Wind scale: calm -> strong */
+  --wind-1: 242 240 247;
+  --wind-2: 203 201 226;
+  --wind-3: 158 154 200;
+  --wind-4: 117 107 177;
+  --wind-5: 84 39 143;
+
+  /* IMD colour-coded warnings (Yellow / Orange / Red), same in both themes */
+  --alert-yellow: 245 197 24;
+  --alert-orange: 234 108 10;
+  --alert-red: 200 30 30;
+  --alert-on-yellow: 29 42 48;
+  --alert-on-orange: 255 255 255;
+  --alert-on-red: 255 255 255;
+
+  /* QR codes: always dark-on-light so phones can scan them (same in both themes) */
+  --qr-fg: 17 24 28;
+  --qr-bg: 255 255 255;
+
+  /* Shape */
+  --radius: 1rem;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 4px 16px rgb(16 24 40 / 0.06);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-primary: 52 168 138;          /* lighter green for contrast */
+  --color-primary-foreground: 8 20 17;
+  --color-accent: 232 163 23;
+  --color-accent-foreground: 20 16 4;
+
+  --color-background: 13 20 23;
+  --color-surface: 21 30 34;
+  --color-surface-2: 28 42 44;
+  --color-foreground: 230 237 235;
+  --color-muted: 150 166 170;
+  --color-border: 45 60 63;
+  --color-ring: 52 168 138;
+
+  --color-success: 74 190 110;
+  --color-warning: 240 180 60;
+  --color-danger: 240 104 104;
+  --color-info: 96 165 230;
+
+  --color-conf-high: 74 190 110;
+  --color-conf-medium: 232 163 23;
+  --color-conf-low: 120 132 137;
+
+  --rain-0: 58 70 75;      /* dim "no rain" so it doesn't glare on dark maps */
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+}

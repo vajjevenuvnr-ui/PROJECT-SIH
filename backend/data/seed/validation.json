@@ -1,0 +1,112 @@
+{
+ "metrics": [
+  {
+   "id": 1,
+   "variable": "tmax",
+   "period": "Jun-Sep 2025",
+   "method": "block_baseline",
+   "threshold_mm": null,
+   "rmse": 2.4,
+   "bias": 0.9,
+   "mae": 1.9,
+   "pod": null,
+   "far": null,
+   "csi": null,
+   "n_stations": 8,
+   "n_samples": 720,
+   "is_placeholder": true
+  },
+  {
+   "id": 2,
+   "variable": "tmax",
+   "period": "Jun-Sep 2025",
+   "method": "panchayatcast",
+   "threshold_mm": null,
+   "rmse": 1.7,
+   "bias": 0.2,
+   "mae": 1.3,
+   "pod": null,
+   "far": null,
+   "csi": null,
+   "n_stations": 8,
+   "n_samples": 720,
+   "is_placeholder": true
+  },
+  {
+   "id": 3,
+   "variable": "tmin",
+   "period": "Jun-Sep 2025",
+   "method": "block_baseline",
+   "threshold_mm": null,
+   "rmse": 1.9,
+   "bias": 0.6,
+   "mae": 1.5,
+   "pod": null,
+   "far": null,
+   "csi": null,
+   "n_stations": 8,
+   "n_samples": 720,
+   "is_placeholder": true
+  },
+  {
+   "id": 4,
+   "variable": "tmin",
+   "period": "Jun-Sep 2025",
+   "method": "panchayatcast",
+   "threshold_mm": null,
+   "rmse": 1.4,
+   "bias": 0.1,
+   "mae": 1.1,
+   "pod": null,
+   "far": null,
+   "csi": null,
+   "n_stations": 8,
+   "n_samples": 720,
+   "is_placeholder": true
+  },
+  {
+   "id": 5,
+   "variable": "rain",
+   "period": "Jun-Sep 2025",
+   "method": "block_baseline",
+   "threshold_mm": 10.0,
+   "rmse": null,
+   "bias": null,
+   "mae": null,
+   "pod": 0.48,
+   "far": 0.41,
+   "csi": 0.36,
+   "n_stations": 8,
+   "n_samples": 720,
+   "is_placeholder": true
+  },
+  {
+   "id": 6,
+   "variable": "rain",
+   "period": "Jun-Sep 2025",
+   "method": "panchayatcast",
+   "threshold_mm": 10.0,
+   "rmse": null,
+   "bias": null,
+   "mae": null,
+   "pod": 0.63,
+   "far": 0.33,
+   "csi": 0.48,
+   "n_stations": 8,
+   "n_samples": 720,
+   "is_placeholder": true
+  }
+ ],
+ "backtest_events": [
+  {
+   "id": 1,
+   "date": "2025-08-14",
+   "station_id": 8,
+   "observed_mm": 41.0,
+   "block_mm": 6.0,
+   "ours_mm": 35.0,
+   "note": "PLACEHOLDER: replace with a real backtest event in Phase 8.",
+   "is_placeholder": true
+  }
+ ]
+}

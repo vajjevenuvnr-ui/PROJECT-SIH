@@ -1,0 +1,18 @@
+# Render blueprint for the API (the frontend goes on Vercel). Render gives an https:// URL,
+# which phones need for push notifications and offline mode.
+services:
+  - type: web
+    name: kshetra-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DEMO_MODE
+        value: "true"
+      - key: CORS_ORIGINS
+        value: https://your-app.vercel.app
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false

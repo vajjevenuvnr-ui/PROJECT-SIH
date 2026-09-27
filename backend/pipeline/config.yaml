@@ -1,0 +1,33 @@
+# Kshetra downscaling pipeline configuration. Every pipeline script reads this file.
+
+block_id: 1                    # Gajwel (pilot block)
+crs: "EPSG:32644"              # UTM zone 44N (Telangana), metres
+grid_km: 1.0                   # panchayat downscaling grid
+lapse_rate_c_per_km: 6.5       # temperature falls ~6.5 °C per km of height
+timezone: "Asia/Kolkata"
+
+forecast:
+  # Block forecast feed ("IMD-format"): mean of these model points inside the block.
+  point_spacing_km: 8
+  official_model: best_match   # stands in for IMD's block value in the demo
+  # Extra models: their spread gives the High / Medium / Low confidence.
+  ensemble_models: [ecmwf_ifs025, gfs_seamless, icon_seamless]
+  max_age_hours: 3             # reuse a cached live forecast for this long
+
+training:
+  # Perfect prognosis: learn coarse (ERA5 0.25°) -> fine (ERA5-Land 0.1°) over many seasons.
+  # Monsoon (kharif) season only, to stay within Open-Meteo's free limits (one-time, then cached).
+  years: [2021, 2022, 2023]
+  season: ["06-01", "10-31"]
+  coarse_model: era5            # ERA5 0.25° (~28 km): temperature and rain
+  fine_model: era5_land         # ERA5-Land 0.1° (~9 km): temperature target
+  fine_rain_model: ecmwf_ifs    # ECMWF IFS ~9 km: rain target (Open-Meteo serves no ERA5-Land precipitation)
+  margin_deg: 0.2              # train on a wider area than the block for more fine cells
+  holdout_fraction: 0.2        # fine cells held out for honest skill numbers
+
+paths:
+  cache: data/cache/openmeteo
+  static: data/static
+  models: data/models
+  runs: data/runs
+  demo: data/demo

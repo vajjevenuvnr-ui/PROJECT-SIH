@@ -1,0 +1,32 @@
+# env
+.env
+.env.local
+.env.*.local
+
+# node
+node_modules/
+.next/
+.next-prod/
+.next-test/
+out/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# data (demo/ is committed)
+backend/data/raw/
+backend/data/static/
+backend/data/cache/
+backend/data/models/
+backend/data/runs/
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.supabase_token
+.supabase_dbpass
+.officer_credentials.txt

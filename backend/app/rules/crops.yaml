@@ -1,0 +1,328 @@
+# Kshetra agromet advisory rules (GKMS style).
+#
+# Each rule fires when ALL of its `when` conditions hold on the panchayat's 5-day forecast.
+# Conditions use the metrics defined under `metrics` (computed in app/services/advisory.py).
+# Messages are templates; placeholders are filled from the same metrics:
+#   {prob}   max chance of >10 mm over Days 1-2 (%)      {prob25} max chance of >2.5 mm, Days 1-2 (%)
+#   {mm}     largest daily rain in Days 1-3 (mm)          {day}    weekday of that rain
+#   {until}  first dry day after the wet spell            {rain5}  total rain over 5 days (mm)
+#   {rain48} rain over Days 1-2 (mm)                      {tmax}   highest Tmax over 5 days (°C)
+#   {wind_today} / {wind_max} wind (km/h)                 {rain_today} today's rain (mm)
+#   {crop}   crop name in the message language
+#
+# Telugu and Hindi text must be reviewed by a native speaker / agronomist before real use.
+# tag: avoid | prepare | do_now          urgency: 1 (highest) .. 3
+
+crops:
+  cotton:
+    name: { en: Cotton, te: పత్తి, hi: कपास }
+    icon: cotton
+    stages: [sowing, vegetative, square_formation, flowering_boll, picking]
+    calendar: {sowing: 0, vegetative: 15, square_formation: 45, flowering_boll: 70, picking: 140}  # days after sowing
+  paddy:
+    name: { en: Paddy, te: వరి, hi: धान }
+    icon: paddy
+    stages: [nursery, transplanting_tillering, panicle_initiation, flowering_grain, harvest]
+    calendar: {nursery: 0, transplanting_tillering: 25, panicle_initiation: 60, flowering_grain: 85, harvest: 115}
+  maize:
+    name: { en: Maize, te: మొక్కజొన్న, hi: मक्का }
+    icon: maize
+    stages: [sowing, vegetative, tasseling, grain_filling, harvest]
+    calendar: {sowing: 0, vegetative: 12, tasseling: 50, grain_filling: 70, harvest: 100}
+
+stages:
+  sowing: { en: Sowing, te: విత్తనం, hi: बुवाई }
+  vegetative: { en: Vegetative, te: ఎదుగుదల, hi: वानस्पतिक }
+  square_formation: { en: Square formation, te: మొగ్గ దశ, hi: कली बनना }
+  flowering_boll: { en: Flowering & boll, te: పూత & కాయ, hi: फूल व टिंडा }
+  picking: { en: Picking, te: పత్తి తీత, hi: चुनाई }
+  nursery: { en: Nursery, te: నారుమడి, hi: नर्सरी }
+  transplanting_tillering: { en: Transplanting & tillering, te: నాట్లు & పిలకలు, hi: रोपाई व कल्ले }
+  panicle_initiation: { en: Panicle initiation, te: అంకురం దశ, hi: बाली बनना }
+  flowering_grain: { en: Flowering & grain filling, te: పూత & గింజ దశ, hi: फूल व दाना भरना }
+  tasseling: { en: Tasseling, te: పుష్పగుచ్ఛ దశ, hi: नर मंजरी }
+  grain_filling: { en: Grain filling, te: గింజ నిండే దశ, hi: दाना भरना }
+  harvest: { en: Harvest, te: కోత, hi: कटाई }
+
+metrics:
+  p10_48h: { unit: "%", scale: 100, label: { en: "Chance of >10 mm (48 h)", te: ">10 మి.మీ. అవకాశం (48 గం.)", hi: ">10 मि.मी. की संभावना (48 घं.)" } }
+  p25_48h: { unit: "%", scale: 100, label: { en: "Chance of >2.5 mm (48 h)", te: ">2.5 మి.మీ. అవకాశం (48 గం.)", hi: ">2.5 मि.मी. की संभावना (48 घं.)" } }
+  rain_today: { unit: mm, label: { en: "Rain today", te: "నేటి వర్షం", hi: "आज वर्षा" } }
+  rain_48h: { unit: mm, label: { en: "Rain in 48 h", te: "48 గం. వర్షం", hi: "48 घं. वर्षा" } }
+  rain_max_3d: { unit: mm, label: { en: "Heaviest day rain (3 days)", te: "అధిక రోజువారీ వర్షం (3 రోజులు)", hi: "सबसे अधिक दैनिक वर्षा (3 दिन)" } }
+  rain_5d: { unit: mm, label: { en: "Total rain (5 days)", te: "మొత్తం వర్షం (5 రోజులు)", hi: "कुल वर्षा (5 दिन)" } }
+  wind_today: { unit: km/h, label: { en: "Wind today", te: "నేటి గాలి", hi: "आज हवा" } }
+  wind_max_5d: { unit: km/h, label: { en: "Strongest wind (5 days)", te: "గరిష్ఠ గాలి (5 రోజులు)", hi: "अधिकतम हवा (5 दिन)" } }
+  tmax_max_5d: { unit: "°C", label: { en: "Highest Tmax (5 days)", te: "గరిష్ఠ ఉష్ణోగ్రత (5 రోజులు)", hi: "अधिकतम तापमान (5 दिन)" } }
+  false_onset_p: { unit: "%", scale: 100, label: { en: "Dry spell after sowing rains (climatology)", te: "విత్తన వర్షాల తర్వాత పొడి విరామం (వాతావరణ చరిత్ర)", hi: "बुवाई वर्षा के बाद सूखा अंतराल (जलवायु)" } }
+  rh_max_3d: { unit: "%", label: { en: "Highest humidity (3 days)", te: "గరిష్ఠ తేమ (3 రోజులు)", hi: "अधिकतम आर्द्रता (3 दिन)" } }
+
+rules:
+  # ---------------------------------------------------------------- spraying
+  - id: spray_postpone
+    crops: all
+    exclude_stages: [picking, harvest]
+    tag: avoid
+    urgency: 1
+    when: [[p10_48h, ">=", 0.6]]
+    days: [1, 2]
+    title:
+      en: "Postpone pesticide spray until {until}"
+      te: "{until} వరకు పురుగుమందు పిచికారీ వాయిదా వేయండి"
+      hi: "{until} तक कीटनाशक छिड़काव टालें"
+    reason:
+      en: "because {prob}% chance of more than 10 mm rain in the next 48 hours; the spray would wash off"
+      te: "ఎందుకంటే రాబోయే 48 గంటల్లో 10 మి.మీ. కంటే ఎక్కువ వర్షానికి {prob}% అవకాశం; మందు కొట్టుకుపోతుంది"
+      hi: "क्योंकि अगले 48 घंटों में 10 मि.मी. से अधिक वर्षा की {prob}% संभावना है; दवा धुल जाएगी"
+
+  - id: spray_window
+    crops: all
+    exclude_stages: [picking, harvest]
+    tag: do_now
+    urgency: 3
+    when: [[p10_48h, "<", 0.3], [rain_today, "<", 2.5], [wind_today, "<", 15]]
+    days: [1, 2]
+    title:
+      en: "Good window to spray today, if pests are above threshold"
+      te: "తెగుళ్లు పరిమితి దాటితే, ఈరోజు పిచికారీకి అనుకూలం"
+      hi: "कीट सीमा से ऊपर हों तो आज छिड़काव के लिए अच्छा समय"
+    reason:
+      en: "because only {prob}% chance of heavy rain and light wind ({wind_today} km/h) today"
+      te: "ఎందుకంటే భారీ వర్షానికి {prob}% అవకాశం మాత్రమే, ఈరోజు గాలి తక్కువ ({wind_today} కి.మీ./గం.)"
+      hi: "क्योंकि भारी वर्षा की केवल {prob}% संभावना और आज हवा हल्की ({wind_today} कि.मी./घं.) है"
+
+  # ---------------------------------------------------------------- drainage
+  - id: drains_prepare
+    crops: [cotton, maize]
+    exclude_stages: []
+    tag: prepare
+    urgency: 1
+    when: [[rain_max_3d, ">=", 25]]
+    days: [1, 2, 3]
+    title:
+      en: "Clear field drains before {day}"
+      te: "{day} లోపు పొలం కాలువలు శుభ్రం చేయండి"
+      hi: "{day} से पहले खेत की नालियाँ साफ करें"
+    reason:
+      en: "because {mm} mm rain is expected on {day}; avoid waterlogging"
+      te: "ఎందుకంటే {day} నాడు {mm} మి.మీ. వర్షం అంచనా; నీరు నిలవకుండా చూడండి"
+      hi: "क्योंकि {day} को {mm} मि.मी. वर्षा अपेक्षित है; जलभराव से बचें"
+
+  - id: bunds_prepare
+    crops: [paddy]
+    exclude_stages: [harvest]
+    tag: prepare
+    urgency: 1
+    when: [[rain_max_3d, ">=", 25]]
+    days: [1, 2, 3]
+    title:
+      en: "Strengthen bunds and keep drain outlets ready before {day}"
+      te: "{day} లోపు గట్లు బలపరచి, నీటి బయటి దారులు సిద్ధం చేయండి"
+      hi: "{day} से पहले मेड़ें मजबूत करें और निकासी तैयार रखें"
+    reason:
+      en: "because {mm} mm rain is expected on {day}"
+      te: "ఎందుకంటే {day} నాడు {mm} మి.మీ. వర్షం అంచనా"
+      hi: "क्योंकि {day} को {mm} मि.मी. वर्षा अपेक्षित है"
+
+  # ---------------------------------------------------------------- fertilizer
+  - id: urea_now
+    crops: { cotton: [vegetative, square_formation], paddy: [transplanting_tillering, panicle_initiation], maize: [vegetative, tasseling] }
+    tag: do_now
+    urgency: 2
+    when: [[rain_today, "<", 2.5], [wind_today, "<", 15], [rain_48h, "<", 64.5]]
+    days: [1]
+    title:
+      en: "Apply top-dress urea today (dry window)"
+      te: "ఈరోజే యూరియా పై పాటుగా వేయండి (పొడి వాతావరణం)"
+      hi: "आज ही यूरिया की टॉप ड्रेसिंग करें (सूखा समय)"
+    reason:
+      en: "because rain today is under 2.5 mm and wind is only {wind_today} km/h; mix it into the soil"
+      te: "ఎందుకంటే ఈరోజు వర్షం 2.5 మి.మీ. కంటే తక్కువ, గాలి {wind_today} కి.మీ./గం. మాత్రమే; మట్టిలో కలపండి"
+      hi: "क्योंकि आज वर्षा 2.5 मि.मी. से कम और हवा केवल {wind_today} कि.मी./घं. है; मिट्टी में मिलाएँ"
+
+  - id: fertilizer_postpone
+    crops: all
+    exclude_stages: [picking, harvest]
+    tag: avoid
+    urgency: 1
+    when: [[rain_48h, ">=", 64.5]]
+    days: [1, 2]
+    title:
+      en: "Postpone fertilizer application"
+      te: "ఎరువుల వాడకం వాయిదా వేయండి"
+      hi: "उर्वरक डालना टालें"
+    reason:
+      en: "because heavy rain ({rain48} mm in 48 hours) would wash nutrients away"
+      te: "ఎందుకంటే భారీ వర్షం (48 గంటల్లో {rain48} మి.మీ.) పోషకాలను కొట్టుకుపోతుంది"
+      hi: "क्योंकि भारी वर्षा (48 घंटों में {rain48} मि.मी.) पोषक तत्व बहा देगी"
+
+  # ---------------------------------------------------------------- irrigation
+  - id: irrigation_skip
+    crops: all
+    exclude_stages: [picking, harvest]
+    tag: avoid
+    urgency: 3
+    when: [[rain_5d, ">=", 20]]
+    days: [1, 2, 3, 4, 5]
+    title:
+      en: "Skip irrigation this week"
+      te: "ఈ వారం నీటి తడి అవసరం లేదు"
+      hi: "इस सप्ताह सिंचाई न करें"
+    reason:
+      en: "because {rain5} mm rain is expected over the next 5 days"
+      te: "ఎందుకంటే రాబోయే 5 రోజుల్లో {rain5} మి.మీ. వర్షం అంచనా"
+      hi: "क्योंकि अगले 5 दिनों में {rain5} मि.मी. वर्षा अपेक्षित है"
+
+  - id: irrigate_now
+    crops: all
+    exclude_stages: [picking, harvest]
+    tag: do_now
+    urgency: 2
+    when: [[rain_5d, "<", 5], [tmax_max_5d, ">=", 35]]
+    days: [1, 2, 3, 4, 5]
+    title:
+      en: "Irrigate {crop} within the next 2 days"
+      te: "రాబోయే 2 రోజుల్లో {crop}కు నీరు పెట్టండి"
+      hi: "अगले 2 दिनों में {crop} की सिंचाई करें"
+    reason:
+      en: "because only {rain5} mm rain is expected and temperature reaches {tmax} °C"
+      te: "ఎందుకంటే {rain5} మి.మీ. వర్షం మాత్రమే, ఉష్ణోగ్రత {tmax} °C వరకు"
+      hi: "क्योंकि केवल {rain5} मि.मी. वर्षा और तापमान {tmax} °C तक"
+
+  # ---------------------------------------------------------------- sowing
+  - id: sowing_delay
+    crops: { cotton: [sowing], maize: [sowing], paddy: [nursery] }
+    tag: avoid
+    urgency: 1
+    when: [[p10_48h, ">=", 0.6]]
+    days: [1, 2]
+    title:
+      en: "Delay sowing until {until}"
+      te: "{until} వరకు విత్తడం వాయిదా వేయండి"
+      hi: "{until} तक बुवाई टालें"
+    reason:
+      en: "because {prob}% chance of more than 10 mm rain in 48 hours may wash away seed"
+      te: "ఎందుకంటే 48 గంటల్లో 10 మి.మీ. పైగా వర్షానికి {prob}% అవకాశం; విత్తనం కొట్టుకుపోవచ్చు"
+      hi: "क्योंकि 48 घंटों में 10 मि.मी. से अधिक वर्षा की {prob}% संभावना से बीज बह सकता है"
+
+  - id: false_onset
+    crops: { cotton: [sowing], maize: [sowing], paddy: [nursery] }
+    tag: avoid
+    urgency: 1
+    when: [[rain_48h, ">=", 20], [false_onset_p, ">=", 0.4]]
+    days: [1, 2]
+    title:
+      en: "Don't sow yet: false-onset risk"
+      te: "ఇప్పుడే విత్తవద్దు: తప్పుడు ఆరంభ ప్రమాదం"
+      hi: "अभी बुवाई न करें: झूठे मानसून आरंभ का जोखिम"
+    reason:
+      en: "because {fop}% of past sowing rains this month were followed by a 10-day dry spell; wait for steady rain"
+      te: "ఎందుకంటే ఈ నెలలో గత విత్తన వర్షాల్లో {fop}% తర్వాత 10 రోజుల పొడి విరామం వచ్చింది; స్థిరమైన వర్షం కోసం ఆగండి"
+      hi: "क्योंकि इस महीने पिछली बुवाई वर्षाओं में {fop}% के बाद 10 दिन का सूखा आया; स्थिर वर्षा का इंतज़ार करें"
+
+  - id: sowing_go
+    crops: { cotton: [sowing], maize: [sowing] }
+    tag: do_now
+    urgency: 2
+    when: [[rain_5d, ">=", 20], [rain_max_3d, "<", 64.5], [p10_48h, "<", 0.6], [false_onset_p, "<", 0.4]]
+    days: [1, 2, 3, 4, 5]
+    title:
+      en: "Sow after the rain, when the soil is moist"
+      te: "వర్షం తర్వాత, నేల తడిగా ఉన్నప్పుడు విత్తండి"
+      hi: "वर्षा के बाद, मिट्टी नम होने पर बुवाई करें"
+    reason:
+      en: "because {rain5} mm rain over 5 days will give good soil moisture"
+      te: "ఎందుకంటే 5 రోజుల్లో {rain5} మి.మీ. వర్షంతో నేలలో తేమ బాగుంటుంది"
+      hi: "क्योंकि 5 दिनों में {rain5} मि.मी. वर्षा से मिट्टी में अच्छी नमी रहेगी"
+
+  # ---------------------------------------------------------------- harvest
+  - id: harvest_postpone
+    crops: { cotton: [picking], paddy: [harvest], maize: [harvest] }
+    tag: avoid
+    urgency: 1
+    when: [[p25_48h, ">=", 0.5]]
+    days: [1, 2]
+    title:
+      en: "Postpone harvest; keep harvested produce covered"
+      te: "కోత వాయిదా వేయండి; కోసిన పంటను కప్పి ఉంచండి"
+      hi: "कटाई टालें; कटी फसल को ढककर रखें"
+    reason:
+      en: "because {prob25}% chance of rain in the next 48 hours"
+      te: "ఎందుకంటే రాబోయే 48 గంటల్లో వర్షానికి {prob25}% అవకాశం"
+      hi: "क्योंकि अगले 48 घंटों में वर्षा की {prob25}% संभावना है"
+
+  # ---------------------------------------------------------------- heat and wind
+  - id: heat_irrigate
+    crops: all
+    exclude_stages: [picking, harvest]
+    tag: prepare
+    urgency: 2
+    when: [[tmax_max_5d, ">=", 38]]
+    days: [1, 2, 3, 4, 5]
+    title:
+      en: "Irrigate in the evening to reduce heat stress"
+      te: "వేడి ఒత్తిడి తగ్గించడానికి సాయంత్రం నీరు పెట్టండి"
+      hi: "गर्मी के तनाव से बचाने के लिए शाम को सिंचाई करें"
+    reason:
+      en: "because temperature reaches {tmax} °C"
+      te: "ఎందుకంటే ఉష్ణోగ్రత {tmax} °C వరకు"
+      hi: "क्योंकि तापमान {tmax} °C तक पहुँचेगा"
+
+  - id: wind_support
+    crops: { cotton: [flowering_boll], maize: [tasseling, grain_filling] }
+    tag: prepare
+    urgency: 2
+    when: [[wind_max_5d, ">=", 30]]
+    days: [1, 2, 3, 4, 5]
+    title:
+      en: "Earth up and support plants before strong wind"
+      te: "బలమైన గాలికి ముందు మొక్కలకు మట్టి ఎగదోసి ఆధారం ఇవ్వండి"
+      hi: "तेज़ हवा से पहले पौधों पर मिट्टी चढ़ाएँ और सहारा दें"
+    reason:
+      en: "because wind up to {wind_max} km/h is expected"
+      te: "ఎందుకంటే {wind_max} కి.మీ./గం. వరకు గాలి అంచనా"
+      hi: "क्योंकि {wind_max} कि.मी./घं. तक हवा अपेक्षित है"
+
+  # ---------------------------------------------------------------- disease risk
+  - id: boll_rot_watch
+    crops: { cotton: [flowering_boll] }
+    tag: prepare
+    urgency: 2
+    when: [[rh_max_3d, ">=", 90], [rain_max_3d, ">=", 20]]
+    days: [1, 2, 3]
+    title:
+      en: "Watch for boll rot after the rain; remove affected bolls"
+      te: "వర్షం తర్వాత కాయ కుళ్లు గమనించండి; దెబ్బతిన్న కాయలు తీసేయండి"
+      hi: "वर्षा के बाद टिंडा सड़न देखें; प्रभावित टिंडे हटाएँ"
+    reason:
+      en: "because humidity reaches {rh}% with {mm} mm rain"
+      te: "ఎందుకంటే {mm} మి.మీ. వర్షంతో తేమ {rh}% వరకు"
+      hi: "क्योंकि {mm} मि.मी. वर्षा के साथ आर्द्रता {rh}% तक"
+
+  - id: blast_watch
+    crops: { paddy: [transplanting_tillering, panicle_initiation] }
+    tag: prepare
+    urgency: 2
+    when: [[rh_max_3d, ">=", 90]]
+    days: [1, 2, 3]
+    title:
+      en: "Scout for blast disease after humid days"
+      te: "తేమ రోజుల తర్వాత అగ్గి తెగులు గమనించండి"
+      hi: "नमी वाले दिनों के बाद ब्लास्ट रोग की निगरानी करें"
+    reason:
+      en: "because humidity reaches {rh}%"
+      te: "ఎందుకంటే తేమ {rh}% వరకు"
+      hi: "क्योंकि आर्द्रता {rh}% तक पहुँचेगी"
+
+# Added by the engine when forecast confidence is low (Q3 in the demo script).
+low_confidence:
+  tag: prepare
+  urgency: 3
+  title:
+    en: "Low forecast confidence: follow the block GKMS bulletin"
+    te: "అంచనా నమ్మకం తక్కువ: బ్లాక్ GKMS బులెటిన్ పాటించండి"
+    hi: "पूर्वानुमान विश्वसनीयता कम: ब्लॉक GKMS बुलेटिन का पालन करें"
+  reason:
+    en: "because the models disagree for this panchayat; re-check tomorrow's forecast before acting"
+    te: "ఎందుకంటే ఈ పంచాయతీకి మోడళ్ల అంచనాలు భిన్నంగా ఉన్నాయి; రేపటి అంచనా చూసి నిర్ణయించండి"
+    hi: "क्योंकि इस पंचायत के लिए मॉडल सहमत नहीं हैं; कदम उठाने से पहले कल का पूर्वानुमान देखें"
