@@ -7,7 +7,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
-from app.api.deps import DS, OfficerDep
+from app.api.deps import DS, OfficerDep, ensure_panchayat
 from app.core.datasource import use_demo
 from app.services.cap import build_cap
 from app.services.forecast import require_run
@@ -75,7 +75,7 @@ def alert_log(ds: DS, alert_id: str | None = None):
 
 @router.post("/alerts/{alert_id}/ack", summary="Officer acknowledges an alert (stops the siren)")
 def acknowledge(alert_id: str, ds: DS, officer: OfficerDep):
-    find_alert(ds, alert_id)
+    ensure_panchayat(ds, officer, find_alert(ds, alert_id)["panchayat"]["id"])
     return ds.ack_alert(alert_id, officer.name)
 
 
@@ -85,6 +85,7 @@ def dispatch(alert_id: str, ds: DS, officer: OfficerDep):
     registered farmers (simulated - no real gateway in this prototype)."""
     w = find_alert(ds, alert_id)
     gp = w["panchayat"]
+    ensure_panchayat(ds, officer, gp["id"])
     subs = ds.list_push_subscriptions([gp["id"]])
 
     def payload(sub):

@@ -3,7 +3,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app.api.deps import DS, OfficerDep
+from app.api.deps import DS, OfficerDep, ensure_block, ensure_panchayat
 from app.schemas.api import Advisory, AdvisoryGenerateRequest, AdvisoryPatch
 from app.core.config import get_settings
 from app.schemas.api import Lang
@@ -31,6 +31,7 @@ def generate(body: AdvisoryGenerateRequest, ds: DS, officer: OfficerDep):
     """Runs the YAML rule engine on the panchayat's 5-day forecast for a crop and growth stage.
     Items are ranked by urgency, then Avoid > Prepare > Do now, carry text in en/te/hi, and an
     `explain` block with each condition's threshold and the actual forecast value."""
+    ensure_panchayat(ds, officer, body.panchayat_id)
     engine.validate(body.crop, body.stage)
     fc = panchayat_forecast(ds, body.panchayat_id)
     items = engine.evaluate(fc["days"], body.crop, body.stage, fc["panchayat"]["confidence"])
@@ -53,6 +54,7 @@ def generate_bulk(body: BulkGenerate, ds: DS, officer: OfficerDep):
 
     from app.services.profiles import resolve
 
+    ensure_block(officer, body.block_id)
     gps = ds.list_panchayats(body.block_id)
     if body.panchayat_ids:
         gps = [g for g in gps if g["id"] in set(body.panchayat_ids)]
@@ -77,6 +79,11 @@ class BulkSend(BaseModel):
 
 @router.post("/send-bulk", summary="Approve and send many advisories at once (simulated delivery)")
 def send_bulk(body: BulkSend, ds: DS, officer: OfficerDep):
+    # Check every advisory first, so a mixed request sends nothing instead of half.
+    for aid in body.advisory_ids:
+        adv = ds.get_advisory(aid)
+        if adv is not None:
+            ensure_panchayat(ds, officer, adv["panchayat_id"])
     results, total = [], 0
     for aid in body.advisory_ids:
         adv = ds.get_advisory(aid)
@@ -103,6 +110,7 @@ def get_advisory(advisory_id: int, ds: DS):
 @router.patch("/{advisory_id}", response_model=Advisory, summary="Officer edits advisory text")
 def edit(advisory_id: int, body: AdvisoryPatch, ds: DS, officer: OfficerDep):
     adv = _get(ds, advisory_id)
+    ensure_panchayat(ds, officer, adv["panchayat_id"])
     if adv["status"] == "sent":
         raise HTTPException(409, "Advisory already sent; generate a new one")
     patch = body.model_dump(exclude_none=True)
@@ -112,6 +120,7 @@ def edit(advisory_id: int, body: AdvisoryPatch, ds: DS, officer: OfficerDep):
 @router.post("/{advisory_id}/approve", response_model=Advisory, summary="Approve advisory for sending")
 def approve(advisory_id: int, ds: DS, officer: OfficerDep):
     adv = _get(ds, advisory_id)
+    ensure_panchayat(ds, officer, adv["panchayat_id"])
     if adv["status"] == "sent":
         return adv
     patch = {"status": "approved"}

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from app.api.deps import DS, OfficerDep
+from app.api.deps import DS, OfficerDep, ensure_panchayat
 from app.api.farmers import recipients
 from app.schemas.api import ShareLogEntry, ShareRequest
 
@@ -18,7 +18,7 @@ def share(body: ShareRequest, ds: DS, officer: OfficerDep):
         raise HTTPException(404, "Advisory not found")
     if adv["status"] == "draft":
         raise HTTPException(409, "Approve the advisory before sending")
-    gp = ds.get_panchayat(adv["panchayat_id"])
+    gp = ensure_panchayat(ds, officer, adv["panchayat_id"])
     entry = ds.insert_share_log({
         "advisory_id": body.advisory_id, "channel": body.channel, "language": body.language,
         "recipients": recipients(ds, gp), "status": SIMULATED_STATUS,

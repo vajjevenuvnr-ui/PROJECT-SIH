@@ -8,6 +8,7 @@ import { useEffect } from "react";
 
 import { LEVEL_STYLE } from "@/components/alerts/AlertCenter";
 import { useApi, useRegion } from "@/components/providers/AppProviders";
+import { useMe } from "@/lib/me";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Combobox, type ComboOption } from "@/components/ui/combobox";
@@ -73,7 +74,11 @@ export function HomeView() {
 
   const states = useApi<Region[]>("/api/regions/states");
   const districts = useApi<Region[]>(stateId ? `/api/regions/districts?state=${stateId}` : null);
-  const blocks = useApi<Region[]>(districtId ? `/api/regions/blocks?district=${districtId}` : null);
+  const allBlocks = useApi<Region[]>(districtId ? `/api/regions/blocks?district=${districtId}` : null);
+  // Officers see only their assigned blocks; admins and Demo Mode see all.
+  const me = useMe();
+  const mine = (id: number) => !me?.block_ids || me.block_ids.includes(id);
+  const blocks = { ...allBlocks, data: allBlocks.data?.filter((b) => mine(b.id)) };
   const summary = useApi<BlockSummary>(blockId ? `/api/blocks/${blockId}/summary` : null);
   const districtGeo = useApi<FeatureCollection<DistrictFeatureProps>>(
     districtId ? `/api/regions/districts/${districtId}/geojson` : null,
@@ -92,7 +97,7 @@ export function HomeView() {
     if (!blockId || !blocks.data?.length) return;
     const cur = blocks.data.find((b) => b.id === blockId);
     const firstCovered = blocks.data.find((b) => (b.panchayat_count ?? 0) > 0);
-    if (cur && cur.panchayat_count === 0 && firstCovered) setSelection({ stateId, districtId, blockId: firstCovered.id });
+    if ((!cur || cur.panchayat_count === 0) && firstCovered) setSelection({ stateId, districtId, blockId: firstCovered.id });
   }, [blockId, blocks.data, stateId, districtId, setSelection]);
 
   // Auto-pick when there is only one choice (e.g. one pilot state).
@@ -209,7 +214,7 @@ export function HomeView() {
                     <DistrictMiniMap
                       data={districtGeo.data}
                       selectedBlockId={blockId}
-                      onSelectBlock={(id) => covered(id) && setSelection({ stateId, districtId, blockId: id })}
+                      onSelectBlock={(id) => mine(id) && covered(id) && setSelection({ stateId, districtId, blockId: id })}
                       nameOf={(p) => localName(p, locale)}
                     />
                   ) : (

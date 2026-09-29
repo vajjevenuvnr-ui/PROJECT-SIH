@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.api.deps import DS, OfficerDep
+from app.api.deps import DS, OfficerDep, ensure_panchayat
 from app.services import advisory as engine
 from app.services.forecast import require_run
 from app.services.profiles import resolve
@@ -40,8 +40,7 @@ class ProfileIn(BaseModel):
 
 @router.put("/{panchayat_id}", summary="Officer sets a panchayat's main crop and sowing date (once per season)")
 def set_profile(panchayat_id: int, body: ProfileIn, ds: DS, officer: OfficerDep):
-    if ds.get_panchayat(panchayat_id) is None:
-        raise HTTPException(404, "Panchayat not found")
+    ensure_panchayat(ds, officer, panchayat_id)
     if body.crop not in engine.load_rules()["crops"]:
         raise HTTPException(422, "Unknown crop")
     ds.set_crop_profile({"panchayat_id": panchayat_id, "crop": body.crop, "sowing_date": body.sowing_date.isoformat(),
